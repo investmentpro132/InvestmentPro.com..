@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestmentPro</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: #0f172a;
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            min-height: 100vh;
+            background: rgba(30, 41, 59, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            padding-bottom: 80px;
+        }
+
+        /* Updated Popup Notification - White with black text */
+        .popup-notification {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: black;
+            border-radius: 10px;
+            padding: 15px 20px;
+            font-size: 14px;
+            border: 2px solid #ffd700;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+            z-index: 1000;
+            max-width: 380px;
+            width: 95%;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 10px; opacity: 1; }
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+        }
+
+        .notification-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
+
+        .platform-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .platform-tagline {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* Balance Section */
+        .balance-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .balance-label {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .balance-usd {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* Updated Active Investments Display */
+        .active-investments {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .investment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .investment-info {
+            flex: 1;
+        }
+
+        .investment-name {
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .investment-details {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        /* Action Buttons - Fixed layout */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffd700 0%, #e6c300 100%);
+            color: #1e293b;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .btn:disabled {
+            background: #475569;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 10px 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-btn.active {
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .nav-icon {
+            font-size: 18px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 16px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
+
+        /* USDT Conversion Display */
+        .usdt-conversion {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .usdt-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-top: 5px;
+        }
+
+        /* Investment Plans */
+        .plan-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .plan-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .plan-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .plan-details {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .plan-detail {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .plan-label {
+            color: #94a3b8;
+        }
+
+        .plan-value {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .profit-status {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        /* More Plans Message */
+        .more-plans-message {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 15px;
+            font-style: italic;
+        }
+
+        /* Live Market - Fast Updates (1 second) */
+        .live-market {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            text-align: center;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .market-item {
+            white-space: nowrap;
+        }
+
+        .price-up {
+            color: #22c55e;
+        }
+
+        .price-down {
+            color: #ef4444;
+        }
+
+        /* History Items */
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid;
+        }
+
+        .history-item.pending {
+            border-left-color: #f59e0b;
+        }
+
+        .history-item.complete {
+            border-left-color: #22c55e;
+        }
+
+        .history-item.failed {
+            border-left-color: #ef4444;
+        }
+
+        .history-info {
+            flex: 1;
+        }
+
+        .history-type {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .history-amount {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .amount-positive {
+            color: #22c55e;
+        }
+
+        .amount-negative {
+            color: #ef4444;
+        }
+
+        .history-status {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-left: 8px;
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-complete {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .status-failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        /* Loading Animation */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Popup Modal - Fixed Layout */
+        .popup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .popup-content {
+            background: rgba(30, 41, 59, 0.95);
+            color: white;
+            border-radius: 15px;
+            padding: 25px 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid #ffd700;
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+
+        .popup-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .popup-message {
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            color: #e2e8f0;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .popup-button {
+            margin-top: auto;
+        }
+
+        /* Hidden elements */
+        .hidden {
+            display: none;
+        }
+
+        /* Password toggle */
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        /* Scrollable areas */
+        .scrollable {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .scrollable::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .scrollable::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .scrollable::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 8px;
+        }
+
+        /* Error message */
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        /* Admin Panel Styles */
+        .admin-panel {
+            background: rgba(255, 0, 0, 0.1);
+            border: 2px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .admin-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .user-list {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-email {
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 14px;
+        }
+
+        .user-balance {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .admin-input {
+            width: 70px;
+            padding: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 12px;
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .transaction-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* Withdrawal Method Options */
+        .withdraw-amount-display {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .method-option {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .method-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffd700;
+        }
+
+        .method-option.selected {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: #ffd700;
+        }
+
+        .method-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 8px;
+        }
+
+        .method-description {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        /* Password Strength Indicator */
+        .password-strength {
+            margin-top: 5px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .strength-weak { color: #ef4444; }
+        .strength-medium { color: #f59e0b; }
+        .strength-strong { color: #22c55e; }
+
+        /* Phone Validation */
+        .phone-validation {
+            margin-top: 5px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .validation-valid { color: #22c55e; }
+        .validation-invalid { color: #ef4444; }
+    </style>
+    
+    <!-- Firebase Configuration -->
+    <script>
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA18-OMYXTHlMH_qZDlHocTPEACfrnBFkg",
+            authDomain: "investmentpro-cb94a.firebaseapp.com",
+            projectId: "investmentpro-cb94a",
+            storageBucket: "investmentpro-cb94a.firebasestorage.app",
+            messagingSenderId: "218840197311",
+            appId: "1:218840197311:web:5e1bf9b0d7c1a96e32fe0a",
+            measurementId: "G-YXHVQKGDT2"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
+</head>
+<body>
+    <!-- Popup Notification Container -->
+    <div id="popupContainer"></div>
+
+    <!-- Custom Popup Modals -->
+    <div class="popup-modal hidden" id="welcomeBonusModal">
+        <div class="popup-content">
+            <div class="popup-title">🎉 WELCOME BONUS!</div>
+            <div class="popup-message">
+                You have received SSP 10,000 welcome bonus!<br><br>
+                Start investing today and withdraw your profits immediately. 
+                Your bonus is ready to grow!
+            </div>
+            <div class="popup-button">
+                <button class="btn btn-primary" onclick="claimWelcomeBonus()" style="width: 100%;">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal for everything except withdrawal minimum -->
+    <div class="popup-modal hidden" id="successModal">
+        <div class="popup-content">
+            <div class="popup-title">✅ SUCCESS!</div>
+            <div class="popup-message" id="successMessage"></div>
+            <div class="popup-button">
+                <button class="btn btn-primary" onclick="closeSuccessModal()" style="width: 100%;">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insufficient Balance Modal ONLY for withdrawal minimum -->
+    <div class="popup-modal hidden" id="insufficientModal">
+        <div class="popup-content">
+            <div class="popup-title">❌  Minimum withdraw</div>
+            <div class="popup-message" id="insufficientMessage"></div>
+            <div class="popup-button">
+                <button class="btn btn-primary" onclick="closeInsufficientModal()" style="width: 100%;">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div class="container" id="loginPage">
+        <div class="header">
+            <div class="platform-name">INVESTMENTPRO</div>
+            <div class="platform-tagline">The foundation of premium investment solutions</div>
+        </div>
+
+        <div id="loginError" class="error-message hidden"></div>
+
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="loginEmail" placeholder="Enter your email">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-wrapper">
+                <input type="password" class="form-input" id="loginPassword" placeholder="Enter your password">
+                <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">👁</button>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="login()" style="width: 100%; margin-bottom: 20px;">
+            Log In
+        </button>
+
+        <div style="text-align: center;">
+            <div style="color: #94a3b8; margin-bottom: 15px; font-size: 16px;">New to InvestmentPro?</div>
+            <button class="btn btn-primary" onclick="showPage('registerPage')" style="width: 100%;">
+                Create Your Account Here
+            </button>
+        </div>
+
+        <!-- Hidden Admin Access -->
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="showAdminLogin()" style="background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; text-decoration: underline;">
+                .
+            </button>
+        </div>
+</div>
+
+<!-- Admin Login Page -->
+<div class="container hidden" id="adminLoginPage">
+    <div class="header">
+        <div class="platform-name">ADMIN PANEL</div>
+        <div class="platform-tagline">Secure Administration Access</div>
+    </div>
+
+    <div id="adminLoginError" class="error-message hidden"></div>
+
+    <div class="form-group">
+        <label class="form-label">Admin Email</label>
+        <input type="email" class="form-input" id="adminEmail" placeholder="Enter admin email">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Admin Password</label>
+        <div class="input-wrapper">
+            <input type="password" class="form-input" id="adminPassword" placeholder="Enter admin password">
+            <button type="button" class="password-toggle" onclick="togglePassword('adminPassword')">👁</button>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="adminLogin()" style="width: 100%; margin-bottom: 15px;">
+        Admin Login
+    </button>
+
+    <button class="btn btn-secondary" onclick="showPage('loginPage')" style="width: 100%;">
+        Back to User Login
+    </button>
+</div>
+
+<!-- Register Page -->
+<div class="container hidden" id="registerPage">
+    <div class="header">
+        <div class="platform-name">INVESTMENTPRO</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="registerName" placeholder="Enter your full name">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="registerEmail" placeholder="Enter your email">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <div style="display: flex; gap: 10px;">
+            <select class="form-input" style="width: 30%;" id="countryCode">
+                <option>+211</option>
+                <option>+27</option>
+                <option>+256</option>
+            </select>
+            <input type="tel" class="form-input" id="registerPhone" placeholder="Phone number" style="flex: 1;" maxlength="10" oninput="validatePhoneNumber()">
+        </div>
+        <div class="phone-validation hidden" id="phoneValidation">
+            <span id="phoneValidationIcon">⏺</span>
+            <span id="phoneValidationText">Enter 10-digit phone number</span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="input-wrapper">
+            <input type="password" class="form-input" id="registerPassword" placeholder="Create password" oninput="checkPasswordStrength()">
+            <button type="button" class="password-toggle" onclick="togglePassword('registerPassword')">👁</button>
+        </div>
+        <div class="password-strength hidden" id="passwordStrength">
+            <span id="passwordStrengthIcon">⏺</span>
+            <span id="passwordStrengthText">Password must be at least 8 characters</span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <div class="input-wrapper">
+            <input type="password" class="form-input" id="confirmPassword" placeholder="Confirm password" oninput="checkPasswordMatch()">
+            <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">👁</button>
+        </div>
+        <div class="password-strength hidden" id="passwordMatch">
+            <span id="passwordMatchIcon">⏺</span>
+            <span id="passwordMatchText">Passwords must match</span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="checkbox-group">
+            <input type="checkbox" id="agreeTerms">
+            <label for="agreeTerms" style="color: #94a3b8; font-size: 16px;">I agree to the Terms & Conditions</label>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="register()" style="width: 100%;" id="registerButton">
+        Register
+    </button>
+
+    <button class="btn btn-secondary" onclick="showPage('loginPage')" style="width: 100%; margin-top: 15px;">
+        Back to Login
+    </button>
+</div>
+
+<!-- Dashboard Page -->
+<div class="container hidden" id="dashboardPage">
+    <div class="header">
+        <div class="platform-name">INVESTMENTPRO</div>
+        <div class="platform-tagline">Welcome to the team of investing...</div>
+    </div>
+
+    <div class="balance-section">
+        <div class="balance-label">Your Balance</div>
+        <div class="balance-amount" id="currentBalance">SSP 0.00</div>
+        <div class="balance-usd" id="usdBalance">$ 0.00 (0%) today</div>
+    </div>
+
+    <!-- Updated Active Investments Display -->
+    <div class="active-investments hidden" id="activeInvestmentsSection">
+        <div class="section-title">ACTIVE INVESTMENTS</div>
+        <div id="activeInvestmentsContainer">
+            <!-- Active investments generated by JavaScript -->
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="showPage('depositPage1')">Deposit</button>
+        <button class="btn btn-secondary" onclick="showPage('withdrawPage1')">Withdraw</button>
+    </div>
+</div>
+
+<!-- Invest Page -->
+<div class="container hidden" id="investPage">
+    <div class="header">
+        <div class="platform-name">Investment Plans</div>
+    </div>
+
+    <div class="live-market">
+        <span class="market-item">GOLD: <span class="price-up" id="goldPrice">1,856.23 ▲</span></span>
+        <span class="market-item">SILVER: <span class="price-down" id="silverPrice">23.45 ▼</span></span>
+        <span class="market-item">BITCOIN: <span class="price-up" id="bitcoinPrice">34,567.89 ▲</span></span>
+    </div>
+
+    <div class="scrollable" id="plansContainer">
+        <!-- Investment plans generated by JavaScript -->
+    </div>
+
+    <!-- More Plans Coming Soon Message -->
+    <div class="more-plans-message">
+        More investment plans are coming soon
+    </div>
+</div>
+
+<!-- History Page -->
+<div class="container hidden" id="historyPage">
+    <div class="header">
+        <div class="platform-name">Transactions History</div>
+    </div>
+
+    <div class="scrollable" id="historyContainer">
+        <!-- History items generated by JavaScript -->
+    </div>
+</div>
+
+<!-- Profile Page -->
+<div class="container hidden" id="profilePage">
+    <div class="header">
+        <div class="platform-name">👤 My Profile</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Name</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05);" id="profileName">John Deng</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Email</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05);" id="profileEmail">johndeng@email.com</div>
+    </div>
+
+    <button class="btn btn-danger" style="width: 100%;" onclick="logout()">
+        Log Out
+    </button>
+</div>
+
+<!-- Admin Panel -->
+<div class="container hidden admin-panel" id="adminPanel">
+    <div class="header">
+        <div class="platform-name">ADMIN CONTROL PANEL</div>
+        <div class="platform-tagline">User Management & Transaction Approval</div>
+    </div>
+
+    <div class="admin-section">
+        <div class="form-group">
+            <label class="form-label">USDT Deposit Address</label>
+            <input type="text" class="form-input" id="adminUSDTAddress" value="usdttttustdfcfggfdddbsbsbsnsi">
+            <button class="btn btn-primary" onclick="updateUSDTAddress()" style="width: 100%; margin-top: 10px;">
+                Update USDT Address
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Minimum Deposit Amount (SSP)</label>
+            <input type="number" class="form-input" id="adminMinDeposit" value="30000" min="1">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Minimum Withdraw Amount (SSP)</label>
+            <input type="number" class="form-input" id="adminMinWithdraw" value="77000" min="1">
+        </div>
+
+        <button class="btn btn-primary" onclick="updateMinAmounts()" style="width: 100%;">
+            Update Minimum Amounts
+        </button>
+    </div>
+
+    <div class="section-title">PENDING TRANSACTIONS</div>
+    <div class="scrollable" id="adminTransactionsContainer" style="margin-bottom: 30px;">
+        <!-- Pending transactions generated by JavaScript -->
+    </div>
+
+    <div class="section-title">USER MANAGEMENT</div>
+    <div class="scrollable" id="adminUsersContainer">
+        <!-- Users list generated by JavaScript -->
+    </div>
+
+    <button class="btn btn-danger" onclick="adminLogout()" style="width: 100%; margin-top: 30px;">
+        Admin Logout
+    </button>
+</div>
+
+<!-- Deposit Pages -->
+<div class="container hidden" id="depositPage1">
+    <div class="header">
+        <div class="platform-name">Deposit</div>
+    </div>
+
+    <!-- FIXED: Text positioned closer to deposit amount -->
+    <div class="form-group">
+        <label class="form-label">Enter Amount (SSP) - Minimum: <span id="minDepositDisplay">SSP 30,000</span></label>
+        <input type="number" class="form-input" id="depositAmount" placeholder="Enter amount in SSP" min="30000" oninput="updateUSDTConversion()">
+        <!-- Moved text here to avoid notification overlap -->
+        <div style="color: #94a3b8; margin-top: 10px; font-size: 14px; text-align: center;">
+            Deposit USDT and receive SSP in your account.
+        </div>
+    </div>
+
+    <!-- USDT Conversion Display -->
+    <div class="usdt-conversion">
+        <div>USDT Equivalent:</div>
+        <div class="usdt-amount" id="usdtEquivalent">USDT 0.00</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="processDeposit()" style="width: 100%;">
+        Continue
+    </button>
+
+    <button class="btn btn-secondary" onclick="showPage('dashboardPage')" style="width: 100%; margin-top: 15px;">
+        Cancel
+    </button>
+</div>
+
+<div class="container hidden" id="depositPage2">
+    <div class="header">
+        <div class="platform-name">Deposit USDT → Receive SSP</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Amount</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05);" id="depositDisplayAmount">SSP 0</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">USDT Equivalent</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05);" id="depositUSDTDisplay">USDT 0.00</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Network</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05);">TRC20</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Currency</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05);">USDT</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">USDT Address</label>
+        <div class="form-input" style="background: rgba(255,255,255,0.05); font-size: 14px; word-break: break-all;" id="usdtAddressDisplay">
+        0xc21c2549fcfefef3f31183ff0cb95a672729cf6e
+        </div>
+        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="copyUSDTAddress()">
+            Copy Address
+        </button>
+    </div>
+
+    <div style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+        <div style="color: #f59e0b; font-weight: bold; margin-bottom: 5px; font-size: 16px;">⚠️ Warning</div>
+        <div style="color: #f59e0b; font-size: 14px;">Make sure you send the USDT BEFORE tapping the button below. Otherwise your deposit will not be complete.</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="completeDeposit()" style="width: 100%;">
+        I have made my deposit
+    </button>
+
+    <button class="btn btn-secondary" onclick="showPage('depositPage1')" style="width: 100%; margin-top: 15px;">
+        Back
+    </button>
+</div>
+
+<!-- Withdraw Pages -->
+<div class="container hidden" id="withdrawPage1">
+    <div class="header">
+        <div class="platform-name">Select Withdrawal Method</div>
+    </div>
+
+    <div style="color: #94a3b8; margin-bottom: 20px; text-align: center; font-size: 16px;">
+        Choose your preferred withdrawal method
+    </div>
+
+    <div id="withdrawMethodsContainer">
+        <!-- Withdrawal methods generated by JavaScript -->
+    </div>
+
+    <button class="btn btn-primary" onclick="showPage('dashboardPage')" style="width: 100%; margin-top: 15px;">
+        Cancel
+    </button>
+</div>
+
+<!-- Bank Transfer Details Page -->
+<div class="container hidden" id="bankDetailsPage">
+    <div class="header">
+        <div class="platform-name">Bank Transfer Details</div>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Withdrawal Amount (SSP)</label>
+        <input type="number" class="form-input" id="bankWithdrawAmount" placeholder="Enter amount in SSP">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="bankFullName" placeholder="Enter your full name">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Account Number</label>
+        <input type="text" class="form-input" id="bankAccountNumber" placeholder="Enter account number">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Bank Name</label>
+        <select class="form-input" id="bankName">
+            <option>Equity Bank South Sudan</option>
+            <option>Kenya Commercial Bank (KCB) South Sudan</option>
+            <option>Ivory Bank</option>
+            <option>Nile Commercial Bank</option>
+            <option>Bank of South Sudan</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Branch Name</label>
+        <input type="text" class="form-input" id="bankBranch" placeholder="Enter branch name">
+    </div>
+
+    <button class="btn btn-secondary" onclick="submitWithdrawal('bank')" style="width: 100%;">
+        Submit Withdrawal
+    </button>
+
+    <button class="btn btn-primary" onclick="showPage('withdrawPage1')" style="width: 100%; margin-top: 15px;">
+        Back
+    </button>
+</div>
+
+<!-- Mobile Money Details Page -->
+    <div class="container hidden" id="mobileMoneyPage">
+        <div class="header">
+            <div class="platform-name">Mobile Money Details</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Withdrawal Amount (SSP)</label>
+            <input type="number" class="form-input" id="mobileWithdrawAmount" placeholder="Enter amount in SSP">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="mobileFullName" placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-input" id="mobilePhone" placeholder="Enter phone number">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Network</label>
+            <select class="form-input" id="mobileNetwork">
+                <option>MTN Mobile Money</option>
+                <option>Zain Cash</option>
+                <option>Vivacell (Digitel)</option>
+            </select>
+        </div>
+
+        <button class="btn btn-secondary" onclick="submitWithdrawal('mobile')" style="width: 100%;">
+            Submit Withdrawal
+        </button>
+
+        <button class="btn btn-primary" onclick="showPage('withdrawPage1')" style="width: 100%; margin-top: 15px;">
+            Back
+        </button>
+    </div>
+
+    <!-- Digital Payments Page -->
+    <div class="container hidden" id="digitalPage">
+        <div class="header">
+            <div class="platform-name">Digital Payments</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Withdrawal Amount (SSP)</label>
+            <input type="number" class="form-input" id="digitalWithdrawAmount" placeholder="Enter amount in SSP">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="digitalFullName" placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Service Provider</label>
+            <select class="form-input" id="digitalProvider">
+                <option>Western Union</option>
+                <option>MoneyGram</option>
+                <option>Ria Money Transfer</option>
+                <option>WorldRemit</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Receiver Location</label>
+            <input type="text" class="form-input" id="digitalLocation" placeholder="Enter city/town">
+        </div>
+
+        <button class="btn btn-secondary" onclick="submitWithdrawal('digital')" style="width: 100%;">
+            Submit Withdrawal
+        </button>
+
+        <button class="btn btn-primary" onclick="showPage('withdrawPage1')" style="width: 100%; margin-top: 15px;">
+            Back
+        </button>
+    </div>
+
+    <!-- Cash Pickup Page -->
+    <div class="container hidden" id="cashPage">
+        <div class="header">
+            <div class="platform-name">Cash Pickup</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Withdrawal Amount (SSP)</label>
+            <input type="number" class="form-input" id="cashWithdrawAmount" placeholder="Enter amount in SSP">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="cashFullName" placeholder="Enter your full name">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">ID Number</label>
+            <input type="text" class="form-input" id="cashIdNumber" placeholder="Enter your ID number">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Pickup Location</label>
+            <select class="form-input" id="cashLocation">
+                <option>Juba Central</option>
+                <option>Wau Main Branch</option>
+                <option>Malakal City Center</option>
+                <option>Yei Town</option>
+                <option>Rumbek Plaza</option>
+            </select>
+        </div>
+
+        <button class="btn btn-secondary" onclick="submitWithdrawal('cash')" style="width: 100%;">
+            Submit Withdrawal
+        </button>
+
+        <button class="btn btn-primary" onclick="showPage('withdrawPage1')" style="width: 100%; margin-top: 15px;">
+            Back
+        </button>
+    </div>
+
+    <!-- Loading Screens -->
+    <div class="container hidden" id="withdrawLoading">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div style="font-size: 18px;" id="withdrawLoadingText">Withdrawal processing...</div>
+            <div style="color: #94a3b8; font-size: 16px; margin-top: 10px;">Please wait while we process your request</div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="loginLoading">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div style="font-size: 18px;">Logging you in...</div>
+            <div style="color: #94a3b8; font-size: 16px; margin-top: 10px;">Securing your access</div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="depositLoading">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div style="font-size: 18px;">Generating your secure deposit address...</div>
+            <div style="color: #94a3b8; font-size: 16px; margin-top: 10px;">Please wait while we prepare your transaction</div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="investmentLoading">
+        <div class="loading">
+            <div class="spinner"></div>
+            <div style="font-size: 18px;">Processing your investment...</div>
+            <div style="color: #94a3b8; font-size: 16px; margin-top: 10px;">Please wait while we secure your funds</div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav hidden" id="bottomNav">
+        <button class="nav-btn active" onclick="showPage('dashboardPage')">
+            <span class="nav-icon">🏠</span>
+            <span>Home</span>
+        </button>
+        <button class="nav-btn" onclick="showPage('investPage')">
+            <span class="nav-icon">💰</span>
+            <span>Invest</span>
+        </button>
+        <button class="nav-btn" onclick="showPage('historyPage')">
+            <span class="nav-icon">📊</span>
+            <span>History</span>
+        </button>
+        <button class="nav-btn" onclick="showPage('profilePage')">
+            <span class="nav-icon">👤</span>
+            <span>Profile</span>
+        </button>
+    </div>
+
+<script>
+    // User data storage - Now using Firebase Firestore
+    let users = []; // We'll load from Firestore
+    let currentUser = null;
+    let userBalance = 0;
+    let investments = [];
+    let transactions = [];
+    let welcomeBonusShown = false;
+    let isAdmin = false;
+    let selectedWithdrawMethod = null;
+    let withdrawAmount = 0;
+
+    // Active investments tracking
+    let activeInvestments = [];
+    let profitInterval = null;
+    let balanceIncreaseStopped = false;
+
+    // Platform settings
+    let platformSettings = JSON.parse(localStorage.getItem('investmentProSettings')) || {
+        minDeposit: 30000,
+        minWithdraw: 77000,
+        usdtAddress: "bdjdklsaknabajaamnsbsbsbsbsnsi"
+    };
+
+    // Admin credentials
+    const ADMIN_EMAIL = "jameskuro65@gmail.com";
+    const ADMIN_PASSWORD = "Bomanaziba123";
+
+    // Exchange rate (SSP to USDT)
+    const EXCHANGE_RATE = 588;
+
+    // Updated Withdrawal methods for South Sudan
+    const withdrawMethods = [
+        { id: 'bank', title: 'Bank Transfer', description: 'Transfer to your bank account', form: 'bankDetailsPage' },
+        { id: 'mobile', title: 'Mobile Money', description: 'Receive via mobile money', form: 'mobileMoneyPage' },
+        { id: 'digital', title: 'Digital Payments', description: 'Western Union, MoneyGram etc.', form: 'digitalPage' },
+        { id: 'cash', title: 'Cash Pickup', description: 'Pick up cash from agent', form: 'cashPage' }
+    ];
+
+    // South Sudanese names for notifications
+    const maleNames = ['Akol', 'Bol', 'Chol', 'Deng', 'Gatkuoth', 'John', 'Kuer', 'Lual', 'Majok', 'Malek', 'Manyang', 'Mou', 'Peter', 'Riak', 'Santino', 'Simon', 'Thon', 'William', 'Yai', 'Yien'];
+    const femaleNames = ['Adau', 'Akon', 'Aluel', 'Amani', 'Amel', 'Ayen', 'Chol', 'Elizabeth', 'Kiden', 'Mary', 'Nyanbol', 'Nyibol', 'Nyok', 'Poni', 'Rebecca', 'Sarah', 'Tabitha', 'Yar', 'Yom', 'Yomma'];
+    const cities = ['Juba', 'Wau', 'Malakal', 'Yei', 'Rumbek', 'Bor', 'Aweil', 'Torit', 'Yambio', 'Bentiu'];
+    
+    // Updated Investment plans with new additions
+    const investmentPlans = [
+        { name: "Gold Plan", min: 10000, return: 23000, duration: "1 day" },
+        { name: "Silver Plan", min: 30000, return: 77000, duration: "2 days" },
+        { name: "Diamond Plan", min: 35000, return: 98000, duration: "2 days" },
+        { name: "Platinum Plan", min: 40000, return: 110000, duration: "3 days" },
+        { name: "VIP Plan", min: 45000, return: 143000, duration: "3 days" },
+        { name: "Premium Gold", min: 50000, return: 170000, duration: "4 days" },
+        { name: "Executive", min: 56000, return: 199000, duration: "4 days" },
+        { name: "Elite", min: 60000, return: 230000, duration: "5 days" },
+        { name: "Royal", min: 67000, return: 268000, duration: "5 days" },
+        { name: "Imperial", min: 70000, return: 288000, duration: "6 days" },
+        { name: "Supreme", min: 78000, return: 310000, duration: "6 days" },
+        { name: "Ultimate", min: 80000, return: 340000, duration: "7 days" },
+        { name: "Masters", min: 89000, return: 386000, duration: "7 days" },
+        { name: "Champions", min: 90000, return: 430000, duration: "8 days" },
+        { name: "Legends", min: 99000, return: 486000, duration: "8 days" },
+        { name: "Titans", min: 100000, return: 522000, duration: "9 days" },
+        { name: "Mega Plan", min: 130000, return: 556000, duration: "9 days" },
+        { name: "Ultra Plan", min: 170000, return: 610000, duration: "10 days" },
+        { name: "Max Plan", min: 192000, return: 685000, duration: "10 days" },
+        { name: "Super Plan", min: 200000, return: 720000, duration: "11 days" },
+        { name: "Power Plan", min: 240000, return: 780000, duration: "11 days" },
+        { name: "Prime Plan", min: 280000, return: 830000, duration: "12 days" },
+        { name: "Pro Plan", min: 300000, return: 880000, duration: "12 days" },
+        { name: "Elite Pro", min: 340000, return: 950000, duration: "13 days" },
+        { name: "Master Pro", min: 380000, return: 1000000, duration: "14 days" }
+    ];
+
+    // Withdrawal amounts for notifications
+    const withdrawalAmounts = [83549, 124788, 150000, 188000, 230000, 268000, 310000, 340000, 386000, 430000, 486000, 522000, 556000, 610000, 685000, 720000, 780000, 830000, 880000, 950000, 1000000];
+    
+    // Page management
+    function showPage(pageId) {
+        document.querySelectorAll('.container').forEach(page => page.classList.add('hidden'));
+        document.getElementById(pageId).classList.remove('hidden');
+        
+        if (pageId === 'loginPage' || pageId === 'registerPage' || pageId === 'adminLoginPage' || pageId === 'adminPanel') {
+            document.getElementById('bottomNav').classList.add('hidden');
+        } else {
+            document.getElementById('bottomNav').classList.remove('hidden');
+        }
+        
+        if (pageId === 'investPage') generateInvestmentPlans();
+        else if (pageId === 'historyPage') generateHistory();
+        else if (pageId === 'adminPanel') { generateAdminUsersList(); generateAdminTransactions(); loadAdminSettings(); }
+        else if (pageId === 'profilePage' && currentUser) updateProfileInfo();
+        else if (pageId === 'withdrawPage1') generateWithdrawMethods();
+        else if (pageId === 'dashboardPage') updateActiveInvestmentsDisplay();
+        
+        updateNavigation(pageId);
+    }
+
+    function updateNavigation(activePage) {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        const navMap = {'dashboardPage': 0, 'investPage': 1, 'historyPage': 2, 'profilePage': 3};
+        if (navMap[activePage] !== undefined) {
+            document.querySelectorAll('.nav-btn')[navMap[activePage]].classList.add('active');
+        }
+    }
+
+    // Phone number validation (10 digits)
+    function validatePhoneNumber() {
+        const phoneInput = document.getElementById('registerPhone');
+        const validation = document.getElementById('phoneValidation');
+        const phone = phoneInput.value.replace(/\D/g, '');
+        
+        if (phone.length === 10) {
+            validation.className = 'phone-validation validation-valid';
+            validation.innerHTML = '✅ Phone number valid';
+            validation.classList.remove('hidden');
+            return true;
+        } else {
+            validation.className = 'phone-validation validation-invalid';
+            validation.innerHTML = '❌ Enter exactly 10 digits';
+            validation.classList.remove('hidden');
+            return false;
+        }
+    }
+
+    // Password strength validation
+    function checkPasswordStrength() {
+        const password = document.getElementById('registerPassword').value;
+        const strength = document.getElementById('passwordStrength');
+        
+        if (password.length === 0) {
+            strength.classList.add('hidden');
+            return;
+        }
+        
+        strength.classList.remove('hidden');
+        
+        if (password.length < 8) {
+            strength.className = 'password-strength strength-weak';
+            strength.innerHTML = '❌ Password too short (min 8 characters)';
+        } else if (password.length < 12) {
+            strength.className = 'password-strength strength-medium';
+            strength.innerHTML = '⚠️ Password medium strength';
+        } else {
+            strength.className = 'password-strength strength-strong';
+            strength.innerHTML = '✅ Strong password';
+        }
+    }
+
+    // Password match validation
+    function checkPasswordMatch() {
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const match = document.getElementById('passwordMatch');
+        
+        if (confirmPassword.length === 0) {
+            match.classList.add('hidden');
+            return;
+        }
+        
+        match.classList.remove('hidden');
+        
+        if (password === confirmPassword) {
+            match.className = 'password-strength strength-strong';
+            match.innerHTML = '✅ Passwords match';
+        } else {
+            match.className = 'password-strength strength-weak';
+            match.innerHTML = '❌ Passwords do not match';
+        }
+    }
+
+    // USDT Conversion
+    function updateUSDTConversion() {
+        const sspAmount = parseInt(document.getElementById('depositAmount').value) || 0;
+        const usdtAmount = (sspAmount / EXCHANGE_RATE).toFixed(2);
+        document.getElementById('usdtEquivalent').textContent = `USDT ${usdtAmount}`;
+        document.getElementById('depositUSDTDisplay').textContent = `USDT ${usdtAmount}`;
+    }
+
+    // Admin functions
+    function showAdminLogin() { showPage('adminLoginPage'); }
+
+    function adminLogin() {
+        const email = document.getElementById('adminEmail').value;
+        const password = document.getElementById('adminPassword').value;
+        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+            isAdmin = true;
+            showPage('adminPanel');
+        } else {
+            showError('adminLoginError', 'Invalid admin credentials');
+        }
+    }
+
+    function adminLogout() { isAdmin = false; showPage('loginPage'); }
+
+    function loadAdminSettings() {
+        document.getElementById('adminUSDTAddress').value = platformSettings.usdtAddress;
+        document.getElementById('adminMinDeposit').value = platformSettings.minDeposit;
+        document.getElementById('adminMinWithdraw').value = platformSettings.minWithdraw;
+        document.getElementById('minDepositDisplay').textContent = `SSP ${platformSettings.minDeposit.toLocaleString()}`;
+    }
+
+    function updateUSDTAddress() {
+        const newAddress = document.getElementById('adminUSDTAddress').value;
+        platformSettings.usdtAddress = newAddress;
+        document.getElementById('usdtAddressDisplay').textContent = newAddress;
+        saveSettings();
+        alert('USDT address updated successfully!');
+    }
+
+    function updateMinAmounts() {
+        const minDeposit = parseInt(document.getElementById('adminMinDeposit').value);
+        const minWithdraw = parseInt(document.getElementById('adminMinWithdraw').value);
+        if (minDeposit < 1 || minWithdraw < 1) {
+            alert('Please enter valid minimum amounts');
+            return;
+        }
+        platformSettings.minDeposit = minDeposit;
+        platformSettings.minWithdraw = minWithdraw;
+        saveSettings();
+        document.getElementById('minDepositDisplay').textContent = `SSP ${minDeposit.toLocaleString()}`;
+        alert('Minimum amounts updated successfully!');
+    }
+
+    function saveSettings() {
+        localStorage.setItem('investmentProSettings', JSON.stringify(platformSettings));
+    }
+
+    // NEW: Load all users from Firestore for admin panel
+    async function loadUsersFromFirestore() {
+        try {
+            const snapshot = await db.collection('users').get();
+            users = [];
+            snapshot.forEach(doc => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+        } catch (error) {
+            console.error('Error loading users:', error);
+        }
+    }
+
+    // FIXED: Register function with proper validation and loading state
+    async function register() {
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const phone = document.getElementById('registerPhone').value;
+        const agreeTerms = document.getElementById('agreeTerms').checked;
+        
+        // Validation checks
+        if (!name || !email || !password || !confirmPassword || !phone) { 
+            alert('Please fill all fields'); 
+            return; 
+        }
+        
+        if (!validatePhoneNumber()) {
+            alert('Please enter a valid 10-digit phone number');
+            return;
+        }
+        
+        if (password !== confirmPassword) { 
+            alert('Passwords do not match'); 
+            return; 
+        }
+        
+        if (password.length < 8) { 
+            alert('Password must be at least 8 characters'); 
+            return; 
+        }
+        
+        if (!agreeTerms) { 
+            alert('Please agree to the Terms & Conditions'); 
+            return; 
+        }
+
+        // Show loading state
+        const registerBtn = document.getElementById('registerButton');
+        const originalText = registerBtn.textContent;
+        registerBtn.textContent = 'Creating Account...';
+        registerBtn.disabled = true;
+
+        try {
+            // Create user in Firebase Authentication
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const firebaseUser = userCredential.user;
+
+            // Create user document in Firestore
+            const newUser = {
+                name: name,
+                email: email,
+                phone: phone,
+                balance: 0,
+                investments: [],
+                transactions: [],
+                activeInvestments: [],
+                receivedWelcomeBonus: false,
+                balanceIncreaseStopped: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            await db.collection('users').doc(firebaseUser.uid).set(newUser);
+
+            // Show success and go to login page
+            showSuccessModal('Account Created Successfully!<br><br>Please login with your email and password to access your account.');
+            
+            // Reset button
+            registerBtn.textContent = originalText;
+            registerBtn.disabled = false;
+            
+            // Go to login page after success
+            setTimeout(() => {
+                showPage('loginPage');
+                // Clear the form
+                document.getElementById('registerName').value = '';
+                document.getElementById('registerEmail').value = '';
+                document.getElementById('registerPhone').value = '';
+                document.getElementById('registerPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                document.getElementById('agreeTerms').checked = false;
+            }, 3000);
+            
+        } catch (error) {
+            // Reset button on error
+            registerBtn.textContent = originalText;
+            registerBtn.disabled = false;
+            
+            if (error.code === 'auth/email-already-in-use') {
+                alert('Email already registered. Please use a different email or login.');
+            } else {
+                alert('Error creating account: ' + error.message);
+            }
+        }
+    }
+
+    // FIXED: Login function with persistent sessions and welcome bonus timing
+    async function login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        if (!email || !password) {
+            showError('loginError', 'Please enter both email and password');
+            return;
+        }
+
+        // Show loading page immediately
+        showPage('loginLoading');
+        
+        try {
+            // Sign in with Firebase Authentication
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            const firebaseUser = userCredential.user;
+
+            // Get user data from Firestore
+            const userDoc = await db.collection('users').doc(firebaseUser.uid).get();
+            
+            if (!userDoc.exists) {
+                showPage('loginPage');
+                showError('loginError', 'User account not found');
+                return;
+            }
+
+            const userData = userDoc.data();
+            
+            // Set current user data
+            currentUser = {
+                uid: firebaseUser.uid,
+                ...userData
+            };
+            
+            userBalance = userData.balance || 0;
+            investments = userData.investments || [];
+            transactions = userData.transactions || [];
+            welcomeBonusShown = userData.receivedWelcomeBonus || false;
+            activeInvestments = userData.activeInvestments || [];
+            balanceIncreaseStopped = userData.balanceIncreaseStopped || false;
+            
+            updateProfileInfo();
+            showPage('dashboardPage');
+            updateBalanceDisplay();
+            updateActiveInvestmentsDisplay();
+            
+            // Start notifications after successful login
+            startNotifications();
+            
+            // FIXED: Show welcome bonus after exactly 14 seconds for new users
+            if (userBalance === 0 && !welcomeBonusShown) {
+                setTimeout(() => {
+                    document.getElementById('welcomeBonusModal').classList.remove('hidden');
+                }, 14000); // Exactly 14 seconds delay
+            }
+            
+            // Start profit calculation if there are active investments and not stopped
+            if (activeInvestments.length > 0 && !balanceIncreaseStopped) {
+                startProfitCalculation();
+            }
+            
+        } catch (error) {
+            showPage('loginPage');
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                showError('loginError', 'Incorrect email or password');
+            } else if (error.code === 'auth/invalid-email') {
+                showError('loginError', 'Invalid email address');
+            } else {
+                showError('loginError', 'Login error: ' + error.message);
+            }
+        }
+    }
+
+    // FIXED: Welcome bonus function - works 100%
+    async function claimWelcomeBonus() {
+        document.getElementById('welcomeBonusModal').classList.add('hidden');
+        userBalance = 10000;
+        
+        try {
+            await db.collection('users').doc(currentUser.uid).update({
+                balance: userBalance,
+                receivedWelcomeBonus: true
+            });
+            
+            // Update local user data
+            currentUser.balance = userBalance;
+            currentUser.receivedWelcomeBonus = true;
+            welcomeBonusShown = true;
+            
+            // Add welcome bonus transaction
+            const bonusTransaction = {
+                type: 'Welcome Bonus',
+                amount: 10000,
+                status: 'complete',
+                date: new Date()
+            };
+            
+            const updatedTransactions = [bonusTransaction, ...(currentUser.transactions || [])];
+            await db.collection('users').doc(currentUser.uid).update({
+                transactions: updatedTransactions
+            });
+            
+            currentUser.transactions = updatedTransactions;
+            
+            updateBalanceDisplay();
+            generateInvestmentPlans();
+            generateHistory();
+            
+            showSuccessModal('🎉 Welcome Bonus Claimed!<br><br>SSP 10,000 has been added to your account.<br>Start investing now!');
+            
+        } catch (error) {
+            alert('Error claiming bonus: ' + error.message);
+            // Rollback local changes
+            userBalance = 0;
+            updateBalanceDisplay();
+        }
+    }
+
+    // UPDATED: Save user data to Firestore
+    async function saveUsers() {
+        if (currentUser && currentUser.uid) {
+            try {
+                await db.collection('users').doc(currentUser.uid).update({
+                    balance: userBalance,
+                    investments: currentUser.investments || [],
+                    transactions: currentUser.transactions || [],
+                    activeInvestments: activeInvestments,
+                    balanceIncreaseStopped: balanceIncreaseStopped
+                });
+            } catch (error) {
+                console.error('Error saving user data:', error);
+            }
+        }
+    }
+
+    // UPDATED: Generate admin users list from Firestore
+    async function generateAdminUsersList() {
+        await loadUsersFromFirestore();
+        const container = document.getElementById('adminUsersContainer');
+        container.innerHTML = '';
+        
+        if (users.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 16px;">No users registered</div>';
+            return;
+        }
+        
+        users.forEach((user, index) => {
+            const userItem = document.createElement('div');
+            userItem.className = 'user-list';
+            userItem.innerHTML = `
+                <div class="user-item">
+                    <div class="user-info">
+                        <div class="user-email">${user.email}</div>
+                        <div class="user-balance">Balance: SSP ${(user.balance || 0).toLocaleString()}</div>
+                        <div style="color: #ef4444; font-size: 11px; margin-top: 2px;">
+                            ${user.balanceIncreaseStopped ? '⛔ Balance Increase Stopped' : '✅ Balance Increase Active'}
+                        </div>
+                    </div>
+                    <div class="admin-actions">
+                        <input type="number" class="admin-input" id="amountInput${index}" placeholder="Amount" min="1">
+                        <button class="btn btn-success btn-small" onclick="addUserBalance('${user.id}', ${index})">Add</button>
+                        <button class="btn btn-warning btn-small" onclick="toggleBalanceIncrease('${user.id}', ${index})">
+                            ${user.balanceIncreaseStopped ? 'Start' : 'Stop'}
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteUser('${user.id}', ${index})">Delete</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(userItem);
+        });
+    }
+    
+    // FIXED: Toggle balance increase with Firestore
+    async function toggleBalanceIncrease(userId, userIndex) {
+        try {
+            const user = users[userIndex];
+            const newStatus = !user.balanceIncreaseStopped;
+            
+            await db.collection('users').doc(userId).update({
+                balanceIncreaseStopped: newStatus
+            });
+            
+            // Update local data
+            users[userIndex].balanceIncreaseStopped = newStatus;
+            
+            // Update current user if it's them
+            if (currentUser && currentUser.uid === userId) {
+                balanceIncreaseStopped = newStatus;
+                if (balanceIncreaseStopped && profitInterval) {
+                    clearInterval(profitInterval);
+                    profitInterval = null;
+                } else if (!balanceIncreaseStopped && activeInvestments.length > 0) {
+                    startProfitCalculation();
+                }
+            }
+            
+            generateAdminUsersList();
+            alert(`Balance increase ${newStatus ? 'stopped' : 'started'} for ${user.email}`);
+            
+        } catch (error) {
+            alert('Error updating balance increase: ' + error.message);
+        }
+    }
+
+    // FIXED: Add user balance with Firestore
+    async function addUserBalance(userId, userIndex) {
+        const amountInput = document.getElementById(`amountInput${userIndex}`);
+        const amount = parseInt(amountInput.value);
+        
+        if (!amount || amount < 1) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        try {
+            const user = users[userIndex];
+            const newBalance = (user.balance || 0) + amount;
+            
+            await db.collection('users').doc(userId).update({
+                balance: newBalance
+            });
+            
+            // Update local data
+            users[userIndex].balance = newBalance;
+            
+            // Update current user if it's them
+            if (currentUser && currentUser.uid === userId) {
+                userBalance = newBalance;
+                updateBalanceDisplay();
+                if (activeInvestments.length > 0 && !profitInterval && !user.balanceIncreaseStopped) {
+                    startProfitCalculation();
+                }
+            }
+            
+            generateAdminUsersList();
+            amountInput.value = '';
+            alert('Balance added successfully!');
+            
+        } catch (error) {
+            alert('Error adding balance: ' + error.message);
+        }
+    }
+
+    // FIXED: Delete user function - allows email reuse
+    async function deleteUser(userId, userIndex) {
+        if (confirm('Are you sure you want to delete this user? This will permanently remove their account.')) {
+            try {
+                const user = users[userIndex];
+                
+                // Delete from Firestore
+                await db.collection('users').doc(userId).delete();
+                
+                // Note: We don't delete from Firebase Auth to allow email reuse
+                // The email can now be used to register a new account
+                
+                users.splice(userIndex, 1);
+                generateAdminUsersList();
+                alert('User deleted successfully! The email can now be used to register a new account.');
+                
+            } catch (error) {
+                alert('Error deleting user: ' + error.message);
+            }
+        }
+    }
+
+    // UPDATED: Generate admin transactions from Firestore
+    async function generateAdminTransactions() {
+        await loadUsersFromFirestore();
+        const container = document.getElementById('adminTransactionsContainer');
+        container.innerHTML = '';
+        
+        let allTransactions = [];
+        users.forEach(user => {
+            if (user.transactions) {
+                user.transactions.forEach(transaction => {
+                    if (transaction.status === 'pending') {
+                        allTransactions.push({
+                            ...transaction, 
+                            userEmail: user.email,
+                            userId: user.id
+                        });
+                    }
+                });
+            }
+        });
+        
+        if (allTransactions.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 16px;">No pending transactions</div>';
+            return;
+        }
+        
+        allTransactions.forEach((transaction, index) => {
+            const transactionItem = document.createElement('div');
+            transactionItem.className = 'transaction-item';
+            const isDeposit = transaction.amount > 0;
+            transactionItem.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <div style="font-weight: bold; color: #ffd700;">${transaction.userEmail}</div>
+                    <div style="color: #94a3b8; font-size: 14px;">${transaction.type}</div>
+                    <div style="font-size: 18px; font-weight: bold; color: ${isDeposit ? '#22c55e' : '#ef4444'}">
+                        ${isDeposit ? '+' : '-'} SSP ${Math.abs(transaction.amount).toLocaleString()}
+                    </div>
+                </div>
+                <div class="admin-actions">
+                    <button class="btn btn-success btn-small" onclick="approveTransaction('${transaction.userId}', '${transaction.userEmail}', ${index})">Approve</button>
+                    <button class="btn btn-danger btn-small" onclick="rejectTransaction('${transaction.userId}', '${transaction.userEmail}', ${index})">Reject</button>
+                </div>
+            `;
+            container.appendChild(transactionItem);
+        });
+    }
+
+    // Updated Withdrawal Methods
+    function generateWithdrawMethods() {
+        const container = document.getElementById('withdrawMethodsContainer');
+        container.innerHTML = '';
+        withdrawMethods.forEach(method => {
+            const methodOption = document.createElement('div');
+            methodOption.className = 'method-option';
+            methodOption.innerHTML = `
+                <div class="method-title">${method.title}</div>
+                <div class="method-description">${method.description}</div>
+            `;
+            methodOption.onclick = function() {
+                document.querySelectorAll('.method-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedWithdrawMethod = method;
+                setTimeout(() => showPage(method.form), 500);
+            };
+            container.appendChild(methodOption);
+        });
+    }
+
+    // UPDATED: Withdrawal Processing with Firebase
+    async function submitWithdrawal(method) {
+        let amount = 0;
+        let isValid = true;
+        let details = {};
+        
+        if (method === 'bank') {
+            amount = parseInt(document.getElementById('bankWithdrawAmount').value) || 0;
+            const fullName = document.getElementById('bankFullName').value;
+            const accountNumber = document.getElementById('bankAccountNumber').value;
+            const bankName = document.getElementById('bankName').value;
+            const branch = document.getElementById('bankBranch').value;
+            if (!amount || amount < 1) { alert('Please enter a valid amount'); isValid = false; }
+            else if (!fullName || !accountNumber || !bankName || !branch) { alert('Please fill all bank details'); isValid = false; }
+            else { details = { fullName, accountNumber, bankName, branch }; }
+        } else if (method === 'mobile') {
+            amount = parseInt(document.getElementById('mobileWithdrawAmount').value) || 0;
+            const fullName = document.getElementById('mobileFullName').value;
+            const phone = document.getElementById('mobilePhone').value;
+            const network = document.getElementById('mobileNetwork').value;
+            if (!amount || amount < 1) { alert('Please enter a valid amount'); isValid = false; }
+            else if (!fullName || !phone || !network) { alert('Please fill all mobile money details'); isValid = false; }
+            else { details = { fullName, phone, network }; }
+        } else if (method === 'digital') {
+            amount = parseInt(document.getElementById('digitalWithdrawAmount').value) || 0;
+            const fullName = document.getElementById('digitalFullName').value;
+            const provider = document.getElementById('digitalProvider').value;
+            const location = document.getElementById('digitalLocation').value;
+            if (!amount || amount < 1) { alert('Please enter a valid amount'); isValid = false; }
+            else if (!fullName || !provider || !location) { alert('Please fill all digital payment details'); isValid = false; }
+            else { details = { fullName, provider, location }; }
+        } else if (method === 'cash') {
+            amount = parseInt(document.getElementById('cashWithdrawAmount').value) || 0;
+            const fullName = document.getElementById('cashFullName').value;
+            const idNumber = document.getElementById('cashIdNumber').value;
+            const location = document.getElementById('cashLocation').value;
+            if (!amount || amount < 1) { alert('Please enter a valid amount'); isValid = false; }
+            else if (!fullName || !idNumber || !location) { alert('Please fill all cash pickup details'); isValid = false; }
+            else { details = { fullName, idNumber, location }; }
+        }
+        
+        if (!isValid) return;
+        if (amount > userBalance) { alert('Insufficient balance'); return; }
+        
+        // Check minimum amount - show proper error message
+        if (amount < platformSettings.minWithdraw) {
+            showInsufficientModal(`Minimum withdrawal is SSP ${platformSettings.minWithdraw.toLocaleString()}<br><br>Your amount: SSP ${amount.toLocaleString()}<br>Please enter a higher amount to proceed with your withdrawal.`);
+            return;
+        }
+        
+        showPage('withdrawLoading');
+        document.getElementById('withdrawLoadingText').textContent = 'Withdrawal processing...';
+        
+        setTimeout(async () => {
+            document.getElementById('withdrawLoadingText').textContent = 'Your withdrawal has been submitted';
+            
+            setTimeout(async () => {
+                const methodName = method === 'bank' ? 'Bank Transfer' : method === 'mobile' ? 'Mobile Money' : method === 'digital' ? 'Digital Payments' : 'Cash Pickup';
+                
+                // Create withdrawal transaction (do NOT deduct balance yet - wait for admin approval)
+                const withdrawalTransaction = {
+                    type: `Withdrawal - ${methodName}`,
+                    amount: -amount, // Negative amount for withdrawal
+                    status: 'pending',
+                    date: new Date(),
+                    details: details
+                };
+
+                try {
+                    // Add transaction to user's transactions in Firestore
+                    const updatedTransactions = [withdrawalTransaction, ...(currentUser.transactions || [])];
+                    
+                    await db.collection('users').doc(currentUser.uid).update({
+                        transactions: updatedTransactions
+                    });
+
+                    // Update local data
+                    currentUser.transactions = updatedTransactions;
+                    
+                    showPage('dashboardPage');
+                    generateHistory();
+                    
+                    // Show success message (money is NOT deducted yet)
+                    showSuccessModal('Your withdrawal request has been submitted for approval.<br><br>Your balance will be updated once the withdrawal is processed.');
+                    
+                } catch (error) {
+                    alert('Error submitting withdrawal: ' + error.message);
+                    showPage('dashboardPage');
+                }
+            }, 2000);
+        }, 6000);
+    }
+
+    // UPDATED: Fixed Admin Approval System for withdrawals with Firebase
+    async function approveTransaction(userId, userEmail, transactionIndex) {
+        try {
+            const user = users.find(u => u.id === userId);
+            if (user && user.transactions) {
+                let pendingCount = -1;
+                let transactionToUpdate = null;
+                
+                for (let i = 0; i < user.transactions.length; i++) {
+                    if (user.transactions[i].status === 'pending') {
+                        pendingCount++;
+                        if (pendingCount === transactionIndex) {
+                            transactionToUpdate = user.transactions[i];
+                            transactionToUpdate.status = 'complete';
+                            
+                            // Handle balance changes based on transaction type
+                            if (transactionToUpdate.amount < 0) { // Withdrawal (negative amount)
+                                // Deduct balance for approved withdrawals
+                                user.balance = (user.balance || 0) + transactionToUpdate.amount; // This subtracts because amount is negative
+                            } else if (transactionToUpdate.amount > 0) { // Deposit (positive amount)
+                                user.balance = (user.balance || 0) + transactionToUpdate.amount;
+                            }
+                            break;
+                        }
+                    }
+                }
+                
+                if (transactionToUpdate) {
+                    // Update user in Firestore
+                    await db.collection('users').doc(userId).update({
+                        balance: user.balance,
+                        transactions: user.transactions
+                    });
+                    
+                    // Update current user if it's them
+                    if (currentUser && currentUser.uid === userId) {
+                        userBalance = user.balance;
+                        updateBalanceDisplay();
+                    }
+                    
+                    generateAdminTransactions();
+                    generateAdminUsersList();
+                    alert('Transaction approved successfully!');
+                }
+            }
+        } catch (error) {
+            alert('Error approving transaction: ' + error.message);
+        }
+    }
+
+    // UPDATED: Fixed Reject Transaction with Firebase - No balance change for rejected withdrawals
+    async function rejectTransaction(userId, userEmail, transactionIndex) {
+        try {
+            const user = users.find(u => u.id === userId);
+            if (user && user.transactions) {
+                let pendingCount = -1;
+                
+                for (let i = 0; i < user.transactions.length; i++) {
+                    if (user.transactions[i].status === 'pending') {
+                        pendingCount++;
+                        if (pendingCount === transactionIndex) {
+                            user.transactions[i].status = 'failed';
+                            break;
+                        }
+                    }
+                }
+                
+                // Update user in Firestore
+                await db.collection('users').doc(userId).update({
+                    transactions: user.transactions
+                });
+                
+                generateAdminTransactions();
+                alert('Transaction rejected! User balance remains unchanged.');
+            }
+        } catch (error) {
+            alert('Error rejecting transaction: ' + error.message);
+        }
+    }
+
+    // UPDATED: Logout function
+    function logout() {
+        // Stop notifications and intervals
+        stopNotifications();
+        if (profitInterval) {
+            clearInterval(profitInterval);
+            profitInterval = null;
+        }
+        
+        // Sign out from Firebase
+        auth.signOut().then(() => {
+            // Reset all user data
+            currentUser = null;
+            userBalance = 0;
+            investments = [];
+            transactions = [];
+            welcomeBonusShown = false;
+            isAdmin = false;
+            selectedWithdrawMethod = null;
+            withdrawAmount = 0;
+            activeInvestments = [];
+            balanceIncreaseStopped = false;
+            
+            showPage('loginPage');
+        }).catch((error) => {
+            console.error('Logout error:', error);
+            showPage('loginPage');
+        });
+    }
+
+    // Utility functions
+    function showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.textContent = message;
+        errorElement.classList.remove('hidden');
+    }
+
+    function showSuccessModal(message) {
+        document.getElementById('successMessage').innerHTML = message;
+        document.getElementById('successModal').classList.remove('hidden');
+    }
+
+    function closeSuccessModal() {
+        document.getElementById('successModal').classList.add('hidden');
+        if (currentUser) showPage('dashboardPage');
+        else showPage('loginPage');
+    }
+
+    function showInsufficientModal(message) {
+        document.getElementById('insufficientMessage').innerHTML = message;
+        document.getElementById('insufficientModal').classList.remove('hidden');
+    }
+
+    function closeInsufficientModal() {
+        document.getElementById('insufficientModal').classList.add('hidden');
+        showPage('withdrawPage1');
+    }
+
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // Balance management
+    function updateBalanceDisplay() {
+        document.getElementById('currentBalance').textContent = `SSP ${userBalance.toLocaleString()}`;
+        document.getElementById('usdBalance').textContent = `$ ${(userBalance * 0.0017).toFixed(2)} (0%) today`;
+    }
+
+    function updateProfileInfo() {
+        if (currentUser) {
+            document.getElementById('profileName').textContent = currentUser.name;
+            document.getElementById('profileEmail').textContent = currentUser.email;
+        }
+    }
+
+    // Updated Active Investments Display
+    function updateActiveInvestmentsDisplay() {
+        const container = document.getElementById('activeInvestmentsContainer');
+        const section = document.getElementById('activeInvestmentsSection');
+        if (!activeInvestments || activeInvestments.length === 0) {
+            section.classList.add('hidden');
+            return;
+        }
+        section.classList.remove('hidden');
+        container.innerHTML = '';
+        activeInvestments.forEach((investment, index) => {
+            const investmentItem = document.createElement('div');
+            investmentItem.className = 'investment-item';
+            investmentItem.innerHTML = `
+                <div class="investment-info">
+                    <div class="investment-name">${investment.plan}</div>
+                    <div class="investment-details">
+                        SSP${investment.invested.toLocaleString()} Return SSP${investment.totalReturn.toLocaleString()} / ${investment.duration}
+                    </div>
+                </div>
+            `;
+            container.appendChild(investmentItem);
+        });
+    }
+
+    // UPDATED: Profit Calculation with Firebase
+    function startProfitCalculation() {
+        if (profitInterval) {
+            clearInterval(profitInterval);
+        }
+        profitInterval = setInterval(calculateInvestmentProfits, 5000 + Math.random() * 6000);
+    }
+
+    async function calculateInvestmentProfits() {
+        if (!currentUser || !activeInvestments.length || balanceIncreaseStopped) return;
+        
+        let balanceUpdated = false;
+        activeInvestments.forEach((investment) => {
+            if (investment.completed) return;
+            const profitAmounts = [40, 80, 100];
+            const profitIncrease = profitAmounts[Math.floor(Math.random() * profitAmounts.length)];
+            investment.currentProfit += profitIncrease;
+            userBalance += profitIncrease;
+            balanceUpdated = true;
+            
+            if (investment.currentProfit >= investment.totalReturn) {
+                investment.completed = true;
+                investment.currentProfit = investment.totalReturn;
+                currentUser.transactions.unshift({
+                    type: `Investment Return: ${investment.plan}`,
+                    amount: investment.totalReturn,
+                    status: 'complete',
+                    date: new Date()
+                });
+            }
+        });
+        
+        if (balanceUpdated) {
+            try {
+                // Update user data in Firestore
+                await db.collection('users').doc(currentUser.uid).update({
+                    balance: userBalance,
+                    activeInvestments: activeInvestments,
+                    transactions: currentUser.transactions
+                });
+                
+                updateBalanceDisplay();
+                updateActiveInvestmentsDisplay();
+                
+            } catch (error) {
+                console.error('Error updating profits:', error);
+            }
+        }
+        
+        // Remove completed investments
+        activeInvestments = activeInvestments.filter(inv => !inv.completed);
+    }
+
+    // UPDATED: Investment plans with Firebase
+    function generateInvestmentPlans() {
+        const container = document.getElementById('plansContainer');
+        container.innerHTML = '';
+        investmentPlans.forEach((plan, index) => {
+            const canInvest = userBalance >= plan.min;
+            const hasInvested = currentUser.investments?.some(inv => inv.plan === plan.name);
+            const planCard = document.createElement('div');
+            planCard.className = 'plan-card';
+            planCard.innerHTML = `
+                <div class="plan-header">
+                    <div class="plan-name">${plan.name}</div>
+                    <div class="plan-amount">SSP ${plan.min.toLocaleString()}</div>
+                </div>
+                <div class="plan-details">
+                    <div class="plan-detail">
+                        <span class="plan-label">Total Return:</span>
+                        <span class="plan-value">SSP ${plan.return.toLocaleString()}</span>
+                    </div>
+                    <div class="plan-detail">
+                        <span class="plan-label">Duration:</span>
+                        <span class="plan-value">${plan.duration}</span>
+                    </div>
+                </div>
+                <div class="profit-status">Profit Secured</div>
+                <button class="btn ${canInvest && !hasInvested ? 'btn-primary' : ''}" 
+                        onclick="invest(${index})" 
+                        ${!canInvest || hasInvested ? 'disabled' : ''}
+                        style="width: 100%; ${!canInvest || hasInvested ? 'background: #475569; color: #94a3b8;' : ''}">
+                    ${hasInvested ? 'Complete' : (canInvest ? 'Invest Now' : 'Insufficient Funds')}
+                </button>
+            `;
+            container.appendChild(planCard);
+        });
+    }
+
+    // UPDATED: Invest function with Firebase
+    async function invest(planIndex) {
+        const plan = investmentPlans[planIndex];
+        if (userBalance < plan.min) {
+            alert('Insufficient funds');
+            return;
+        }
+        if (currentUser.investments?.some(inv => inv.plan === plan.name)) {
+            alert('You have already invested in this plan');
+            return;
+        }
+        
+        const buttons = document.querySelectorAll('#investPage .btn');
+        buttons[planIndex].textContent = 'Investing...';
+        buttons[planIndex].style.background = '#475569';
+        buttons[planIndex].disabled = true;
+        
+        showPage('investmentLoading');
+        
+        setTimeout(async () => {
+            userBalance -= plan.min;
+            
+            const newInvestment = {
+                plan: plan.name,
+                invested: plan.min,
+                totalReturn: plan.return,
+                duration: plan.duration,
+                startTime: new Date(),
+                currentProfit: 0,
+                completed: false
+            };
+            
+            activeInvestments.push(newInvestment);
+            
+            const investmentRecord = { 
+                plan: plan.name, 
+                amount: plan.min, 
+                return: plan.return, 
+                duration: plan.duration, 
+                startTime: new Date() 
+            };
+            
+            const transactionRecord = { 
+                type: 'Investment: ' + plan.name, 
+                amount: -plan.min, 
+                status: 'complete', 
+                date: new Date() 
+            };
+
+            try {
+                // Update user data in Firestore
+                await db.collection('users').doc(currentUser.uid).update({
+                    balance: userBalance,
+                    investments: [...(currentUser.investments || []), investmentRecord],
+                    transactions: [transactionRecord, ...(currentUser.transactions || [])],
+                    activeInvestments: activeInvestments
+                });
+
+                // Update local data
+                currentUser.balance = userBalance;
+                currentUser.investments = currentUser.investments || [];
+                currentUser.investments.push(investmentRecord);
+                currentUser.transactions = currentUser.transactions || [];
+                currentUser.transactions.unshift(transactionRecord);
+                
+                showSuccessModal(`Investment Activated!<br><br>You have successfully invested in ${plan.name}.<br>Return: SSP ${plan.return.toLocaleString()}<br>Duration: ${plan.duration}`);
+                updateBalanceDisplay();
+                updateActiveInvestmentsDisplay();
+                generateInvestmentPlans();
+                
+                if (!balanceIncreaseStopped) {
+                    startProfitCalculation();
+                }
+                
+            } catch (error) {
+                alert('Error processing investment: ' + error.message);
+                showPage('investPage');
+            }
+        }, 3000);
+    }
+
+    // UPDATED: History with Firebase data
+    function generateHistory() {
+        const container = document.getElementById('historyContainer');
+        container.innerHTML = '';
+        if (!currentUser || !currentUser.transactions || currentUser.transactions.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 40px; font-size: 16px;">No transactions yet</div>';
+            return;
+        }
+        currentUser.transactions.forEach(transaction => {
+            const item = document.createElement('div');
+            item.className = `history-item ${transaction.status}`;
+            const isPositive = transaction.amount > 0;
+            const amountClass = isPositive ? 'amount-positive' : 'amount-negative';
+            const amountSign = isPositive ? '+' : '–';
+            let statusClass = '', statusText = '';
+            if (transaction.status === 'pending') { statusClass = 'status-pending'; statusText = 'pending'; }
+            else if (transaction.status === 'complete') { statusClass = 'status-complete'; statusText = 'completed'; }
+            else if (transaction.status === 'failed') { statusClass = 'status-failed'; statusText = 'failed'; }
+            item.innerHTML = `
+                <div class="history-info">
+                    <div class="history-type">${transaction.type}</div>
+                    <div class="history-date">${new Date(transaction.date).toLocaleDateString()} ${new Date(transaction.date).toLocaleTimeString()}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="history-amount ${amountClass}">${amountSign} SSP ${Math.abs(transaction.amount).toLocaleString()}</div>
+                    <div class="history-status ${statusClass}">${statusText}</div>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    // UPDATED: Deposit functionality with Firebase
+    function processDeposit() {
+        const amount = parseInt(document.getElementById('depositAmount').value);
+        if (!amount || amount < platformSettings.minDeposit) {
+            alert(`Minimum deposit is SSP ${platformSettings.minDeposit.toLocaleString()}`);
+            return;
+        }
+        document.getElementById('depositDisplayAmount').textContent = `SSP ${amount.toLocaleString()}`;
+        showPage('depositLoading');
+        setTimeout(() => showPage('depositPage2'), 4000);
+    }
+
+    function copyUSDTAddress() {
+        const address = document.getElementById('usdtAddressDisplay').textContent;
+        navigator.clipboard.writeText(address);
+        alert('USDT address copied to clipboard!');
+    }
+
+    // UPDATED: Complete deposit with Firebase
+    async function completeDeposit() {
+        const amount = parseInt(document.getElementById('depositAmount').value);
+        const depositTransaction = { 
+            type: 'Deposit', 
+            amount: amount, 
+            status: 'pending', 
+            date: new Date() 
+        };
+
+        try {
+            // Add deposit transaction to Firestore
+            const updatedTransactions = [depositTransaction, ...(currentUser.transactions || [])];
+            
+            await db.collection('users').doc(currentUser.uid).update({
+                transactions: updatedTransactions
+            });
+
+            // Update local data
+            currentUser.transactions = updatedTransactions;
+            
+            showSuccessModal('Your deposit has been submitted and is being processed.');
+            generateHistory();
+            
+        } catch (error) {
+            alert('Error submitting deposit: ' + error.message);
+        }
+    }
+
+    // FIXED Popup Notifications - Working properly now with optimized timing
+    let notificationInterval;
+
+    function startNotifications() {
+        // Clear any existing interval first
+        stopNotifications();
+        
+        // Show first notification immediately
+        setTimeout(showSingleNotification, 1000);
+        
+        // Set up random interval for notifications (5-15 seconds)
+        const scheduleNextNotification = () => {
+            const nextTime = 5000 + Math.random() * 10000; // 5-15 seconds
+            notificationInterval = setTimeout(() => {
+                if (currentUser) { // Only show if user is still logged in
+                    showSingleNotification();
+                    scheduleNextNotification();
+                }
+            }, nextTime);
+        };
+        
+        scheduleNextNotification();
+    }
+
+    function showSingleNotification() {
+        if (!currentUser) return;
+        
+        const popupContainer = document.getElementById('popupContainer');
+        const showMale = Math.random() > 0.5;
+        const names = showMale ? maleNames : femaleNames;
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const randomCity = cities[Math.floor(Math.random() * cities.length)];
+        const randomAmount = withdrawalAmounts[Math.floor(Math.random() * withdrawalAmounts.length)];
+        
+        const notification = document.createElement('div');
+        notification.className = 'popup-notification';
+        notification.style.animation = `slideDown 0.3s ease`;
+        notification.innerHTML = `
+            <div class="notification-item">
+                <div class="notification-dot"></div>
+                <span>${randomName} from ${randomCity} withdrew SSP ${randomAmount.toLocaleString()} ✔</span>
+            </div>
+        `;
+        popupContainer.appendChild(notification);
+        
+        // Remove notification after 8 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 8000);
+    }
+
+    function stopNotifications() {
+        if (notificationInterval) {
+            clearTimeout(notificationInterval);
+            notificationInterval = null;
+        }
+    }
+
+    // Live market updates
+    function updateLiveMarket() {
+        const prices = [
+            { element: 'goldPrice', min: 1800, max: 1900 },
+            { element: 'silverPrice', min: 20, max: 25 },
+            { element: 'bitcoinPrice', min: 34000, max: 36000 }
+        ];
+        prices.forEach(price => {
+            const element = document.getElementById(price.element);
+            if (element) {
+                const currentValue = parseFloat(element.textContent.replace(/[^0-9.]/g, '')) || price.min;
+                const change = (Math.random() * 20) - 10;
+                const newValue = Math.max(price.min, Math.min(price.max, currentValue + change));
+                const isUp = change >= 0;
+                const symbol = isUp ? '▲' : '▼';
+                const colorClass = isUp ? 'price-up' : 'price-down';
+                element.className = colorClass;
+                element.textContent = `${newValue.toFixed(2)} ${symbol}`;
+            }
+        });
+    }
+
+    // FIXED: Initialize - Check Firebase Auth State with persistent sessions
+    function init() {
+        // Start live market updates
+        setInterval(updateLiveMarket, 1000);
+        
+        // Configure Firebase auth persistence
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .then(() => {
+                // Check if user is already logged in
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        // User is signed in, load their data
+                        try {
+                            const userDoc = await db.collection('users').doc(user.uid).get();
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                
+                                currentUser = {
+                                    uid: user.uid,
+                                    ...userData
+                                };
+                                
+                                userBalance = userData.balance || 0;
+                                investments = userData.investments || [];
+                                transactions = userData.transactions || [];
+                                welcomeBonusShown = userData.receivedWelcomeBonus || false;
+                                activeInvestments = userData.activeInvestments || [];
+                                balanceIncreaseStopped = userData.balanceIncreaseStopped || false;
+                                
+                                updateProfileInfo();
+                                showPage('dashboardPage');
+                                updateBalanceDisplay();
+                                updateActiveInvestmentsDisplay();
+                                
+                                // Start notifications
+                                startNotifications();
+                                
+                                // Start profit calculation if needed
+                                if (activeInvestments.length > 0 && !balanceIncreaseStopped) {
+                                    startProfitCalculation();
+                                }
+                                
+                                return;
+                            }
+                        } catch (error) {
+                            console.error('Error loading user data:', error);
+                        }
+                    }
+                    
+                    // No user signed in or error loading data
+                    showPage('loginPage');
+                });
+            })
+            .catch((error) => {
+                console.error('Auth persistence error:', error);
+                showPage('loginPage');
+            });
+    }
+
+    // Start the application
+    init();
+</script>
+</body>
+</html>
